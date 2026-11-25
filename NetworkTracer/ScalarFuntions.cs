@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Threading;
 using System.Linq;
 using System.Net.NetworkInformation;
 using System.Text.RegularExpressions;
@@ -33,7 +34,7 @@ namespace NetworkTracer
             {
                 string host = "google.com";
                 bool result = false;
-                Ping p = new Ping();
+                using (var p = new Ping())
                 try
                 {
                     PingReply reply = p.Send(host, 5000);
@@ -47,16 +48,24 @@ namespace NetworkTracer
 
 
         /// <summary>
-        /// Becomes Dheet while deleting a file
+        /// Retries transient I/O failures when deleting a file.
         /// </summary>
         /// <param name="fullPath"></param>
         public static void DeleteFile(string fullPath)
         {
-            try
+            const int maxAttempts = 3;
+            for (int attempt = 1; ; attempt++)
             {
-                File.Delete(fullPath);
+                try
+                {
+                    File.Delete(fullPath);
+                    return;
+                }
+                catch (IOException) when (attempt < maxAttempts)
+                {
+                    Thread.Sleep(100 * attempt);
+                }
             }
-            catch { DeleteFile(fullPath); }
         }
 
 
