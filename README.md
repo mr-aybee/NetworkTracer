@@ -1,50 +1,112 @@
-# NetworkTracer
+<div align="center">
+
+# 🛰️ NetworkTracer
+
+**Bulk traceroute, ping and port checks for a whole list of hosts — then replay the routes hop by hop.**
+
+[![CI](https://github.com/mr-aybee/network-tracer/actions/workflows/ci.yml/badge.svg)](https://github.com/mr-aybee/network-tracer/actions/workflows/ci.yml)
+![.NET Framework](https://img.shields.io/badge/.NET%20Framework-4.8-512BD4)
+![platform](https://img.shields.io/badge/platform-Windows-0078D6)
+![UI](https://img.shields.io/badge/UI-WinForms-68217A)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
+</div>
+
+---
 
 ## Overview
 
-NetworkTracer is a Windows Forms application built with .NET that provides network diagnostic functionalities. It allows users to perform traceroutes to multiple IP addresses simultaneously, check port connectivity, and then visualize the results.
-
-The application consists of two main components:
-
-*   **ListTracer**: For initiating traceroutes and port checks on a list of IP addresses.
-*   **FileTracer**: For parsing and displaying the traceroute results from the generated log files.
+NetworkTracer is a Windows Forms diagnostics tool for network engineers. Paste a list of IPs, run traceroutes against all of them concurrently, check reachability of a specific port, and save each route to its own log. The companion **FileTracer** view parses those logs back into a hop-by-hop grid for comparison.
 
 ## Features
 
-*   **Bulk Traceroute**: Perform traceroutes for a list of IP addresses.
-*   **Customizable Parameters**: Set custom timeout and max hops for traceroutes.
-*   **Port Scanning**: Check the status of a specific port on multiple IP addresses.
-*   **Result Logging**: Saves detailed traceroute logs for each IP address.
-*   **Route Visualization**: Parses and displays the hops from the traceroute logs.
+- 🌐 **Bulk traceroute** with per-host max-hops and timeout
+- 📶 **Ping status** for every destination
+- 🔌 **Port check** across the whole list
+- 🗃️ **Per-host logs** in a timestamped `Result [YYYY MM DD HH-mm-ss]` folder
+- 🧭 **FileTracer** — parse saved logs into a hop table
+- 📋 Editable grid with copy/paste support
 
-## How to Use
+## How it works
 
-### Step 1: Tracing a list of IPs (`ListTracer`)
+```mermaid
+flowchart LR
+    subgraph ListTracer
+      A[IP list grid] --> B[tracert per host<br/>async]
+      A --> C[Ping + port check]
+    end
+    B --> D[(Result folder<br/>IP.txt per host)]
+    C --> E[Status column]
+    D --> F[FileTracer<br/>parse hops]
+    F --> G[Hop-by-hop grid]
+```
 
-1.  Launch the `NetworkTracer.exe` application. The main window that appears is the **ListTracer**.
-2.  In the grid, enter the IP addresses you want to trace in the "IP" column.
-3.  (Optional) You can specify a "MaxHops" and "TimeOut" value for each IP address. If left blank, default values will be used.
-4.  Click the **Start Tracer** button.
-5.  The application will start performing traceroutes for all the IPs in the list. The progress will be displayed in the window title.
-6.  The "Status" column will show the ping response to the destination IP.
-7.  Once the process is complete, a new directory named `Result [YYYY MM DD HH-mm-ss]` will be created in the application's directory. This folder will contain the detailed traceroute log file for each IP address.
+## Tech stack
 
-#### Checking Port Connectivity
+| Layer | Technology |
+| --- | --- |
+| UI | C# · Windows Forms · .NET Framework 4.8 |
+| Probing | `tracert` via hidden process, `System.Net.NetworkInformation.Ping`, TCP connect |
+| Output | Plain-text route logs per host |
 
-1.  Enter a port number in the textbox next to the **Port Start** button.
-2.  Click **Port Start**.
-3.  The "Status" column will be updated with the ping status and whether the specified port is open or not.
+## Getting started
 
-### Step 2: Analyzing the results (`FileTracer`)
+### Prerequisites
 
-1.  From the **ListTracer** window, click the **File Tracer** button. This will open the **FileTracer** window.
-2.  In the **FileTracer** window, you need to provide the path to the results directory that was generated in Step 1. By default, the application will look for a folder in its own directory (e.g., `Result [2025 07 24 17-15-29]`). Make sure the textbox contains the correct path to the results folder.
-3.  Add the same IP addresses to the grid that you traced in the **ListTracer**.
-4.  Click the **Start** button.
-5.  The application will read the corresponding log file for each IP address from the results directory, parse it, and display the IP address of each hop in the grid.
+- Windows with .NET Framework 4.8
+- Visual Studio 2019+ or MSBuild
 
-## Building from Source
+### Build
 
-1.  Clone the repository.
-2.  Open `NetworkTracer.sln` in Visual Studio.
-3.  Build the solution. The executable will be available in the `bin/Debug` or `bin/Release` folder.
+```shell
+git clone https://github.com/mr-aybee/network-tracer.git
+cd network-tracer
+msbuild NetworkTracer.sln /p:Configuration=Release
+```
+
+## Usage
+
+**Trace a list of hosts**
+
+1. Launch `NetworkTracer.exe` (opens **ListTracer**).
+2. Enter IPs in the grid; optionally set **MaxHops** and **TimeOut** per row.
+3. Click **Start Tracer**. Progress shows in the title bar; **Status** shows the ping result.
+4. Routes are saved to `Result [timestamp]/<ip>.txt`.
+
+**Check a port**
+
+Enter a port next to **Port Start** and click it — **Status** shows ping plus port open/closed.
+
+**Analyse saved routes**
+
+Click **File Tracer**, point it at the result folder, add the same IPs and click **Start** to see each hop.
+
+## Project structure
+
+```text
+network-tracer/
+└── NetworkTracer/
+    ├── ListTracer.cs      # Main window: bulk trace, ping, port check
+    ├── FileTracer.cs      # Parses saved route logs into hops
+    ├── Tracerter.cs       # Async tracert wrapper
+    ├── PingTest.cs        # Ping helpers
+    ├── CommandPrompt.cs   # Hidden process execution
+    └── ScalarFuntions.cs  # Shared utilities
+```
+
+## Development
+
+- Open `NetworkTracer.sln` in Visual Studio and build.
+- CI builds with MSBuild on Windows for every push and pull request.
+
+## Contributing
+
+Contributions are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) for the branch, build and pull-request workflow. Please report security issues privately through [GitHub security advisories](https://github.com/mr-aybee/network-tracer/security/advisories/new), not public issues.
+
+## Code of Conduct
+
+This project follows the [Contributor Covenant](CODE_OF_CONDUCT.md). By participating you agree to uphold it.
+
+## License
+
+Released under the [MIT License](LICENSE). © 2026 Abdullah Shahid.
